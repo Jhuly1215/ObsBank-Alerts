@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="FCM Token"
+            android:textStyle="bold"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tokenText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Cargando token..."
+            android:textSize="12sp"
+            android:textIsSelectable="true"
+            android:padding="8dp" />
+
+        <Button
+            android:id="@+id/btnCriticalSub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Subscribe Critical" />
+
+        <Button
+            android:id="@+id/btnCriticalUnsub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Unsubscribe Critical" />
+
+        <Button
+            android:id="@+id/btnWarningSub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Subscribe Warning" />
+
+        <Button
+            android:id="@+id/btnWarningUnsub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Unsubscribe Warning" />
+
+        <Button
+            android:id="@+id/btnInfoSub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Subscribe Info" />
+
+        <Button
+            android:id="@+id/btnInfoUnsub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Unsubscribe Info" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Estado"
+            android:textStyle="bold"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Sin eventos todavía"
+            android:padding="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Último mensaje"
+            android:textStyle="bold"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/lastMessageText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="No recibido"
+            android:padding="8dp" />
+
+    </LinearLayout>
+</ScrollView>
