@@ -1,168 +1,143 @@
 package com.obsbank.alerts;
 
-import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.os.Build;
-import android.os.Bundle;
-import android.widget.Button;
-import android.widget.TextView;
+import android.util.Log;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.core.app.NotificationCompat;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.google.firebase.messaging.FirebaseMessagingService;
+import com.google.firebase.messaging.RemoteMessage;
 
-import com.google.firebase.messaging.FirebaseMessaging;
+import java.util.Map;
 
-public class MainActivity extends AppCompatActivity {
+public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
-    private TextView tokenText;
-    private TextView statusText;
-    private RecyclerView recyclerViewAlerts;
-    private AlertsAdapter alertsAdapter;
-    private BroadcastReceiver alertReceiver;
+    private static final String TAG = "OBS_BANK_FCM";
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    public void onNewToken(String token) {
+        super.onNewToken(token);
+        Log.d(TAG, "Nuevo token: " + token);
 
-        tokenText = findViewById(R.id.tokenText);
-        statusText = findViewById(R.id.statusText);
-        
-        recyclerViewAlerts = findViewById(R.id.recyclerViewAlerts);
-        recyclerViewAlerts.setLayoutManager(new LinearLayoutManager(this));
-        alertsAdapter = new AlertsAdapter(new ArrayList<>());
-        recyclerViewAlerts.setAdapter(alertsAdapter);
+        SharedPreferences prefs = getSharedPreferences("obsbank_prefs", MODE_PRIVATE);
+        prefs.edit().putString("last_token", token).apply();
+    }
 
-        Button btnCriticalSub = findViewById(R.id.btnCriticalSub);
-        Button btnCriticalUnsub = findViewById(R.id.btnCriticalUnsub);
-        Button btnWarningSub = findViewById(R.id.btnWarningSub);
-        Button btnWarningUnsub = findViewById(R.id.btnWarningUnsub);
-        Button btnInfoSub = findViewById(R.id.btnInfoSub);
-        Button btnInfoUnsub = findViewById(R.id.btnInfoUnsub);
+    @Override
+    public void onMessageReceived(RemoteMessage message) {
+        Log.d(TAG, "onMessageReceived ejecutado");
 
-        requestNotificationPermission();
-        loadToken();
-        loadAlertHistory();
+        String title = "Alert";
+        String body = "New alert";
+        String severity = "info";
 
-        btnCriticalSub.setOnClickListener(v -> subscribe("obsbank-critical"));
-        btnCriticalUnsub.setOnClickListener(v -> unsubscribe("obsbank-critical"));
+        if (message.getNotification() != null) {
+            Log.d(TAG, "Notification payload presente");
 
-        btnWarningSub.setOnClickListener(v -> subscribe("obsbank-warning"));
-        btnWarningUnsub.setOnClickListener(v -> unsubscribe("obsbank-warning"));
-
-        btnInfoSub.setOnClickListener(v -> subscribe("obsbank-info"));
-        btnInfoUnsub.setOnClickListener(v -> unsubscribe("obsbank-info"));
-
-        // Inicializa un receiver para refrescar los datos automáticamente
-        alertReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                loadAlertHistory();
+            if (message.getNotification().getTitle() != null) {
+                title = message.getNotification().getTitle();
             }
-        };
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        loadAlertHistory();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            registerReceiver(alertReceiver, new IntentFilter("com.obsbank.alerts.NEW_ALERT"), Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(alertReceiver, new IntentFilter("com.obsbank.alerts.NEW_ALERT"));
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver(alertReceiver);
-    }
-
-    private void loadToken() {
-        FirebaseMessaging.getInstance().getToken()
-                .addOnCompleteListener(task -> {
-                    if (!task.isSuccessful()) {
-                        tokenText.setText("Error obteniendo token");
-                        statusText.setText("No se pudo obtener el token");
-                        return;
-                    }
-
-                    String token = task.getResult();
-                    tokenText.setText(token);
-                    statusText.setText("Dispositivo registrado");
-                });
-    }
-
-    private void subscribe(String topic) {
-        FirebaseMessaging.getInstance().subscribeToTopic(topic)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        statusText.setText("Suscrito a: " + topic);
-                    } else {
-                        statusText.setText("Falló la suscripción a: " + topic);
-                    }
-                });
-    }
-
-    private void unsubscribe(String topic) {
-        FirebaseMessaging.getInstance().unsubscribeFromTopic(topic)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        statusText.setText("Desuscrito de: " + topic);
-                    } else {
-                        statusText.setText("Falló la desuscripción de: " + topic);
-                    }
-                });
-    }
-
-    private void requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= 33) {
-            if (ContextCompat.checkSelfPermission(this,
-                    Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-
-                ActivityCompat.requestPermissions(
-                        this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        1001);
+            if (message.getNotification().getBody() != null) {
+                body = message.getNotification().getBody();
             }
         }
+
+        Map<String, String> data = message.getData();
+        if (data != null && !data.isEmpty()) {
+            Log.d(TAG, "Data payload: " + data.toString());
+
+            if (data.containsKey("title")) {
+                title = data.get("title");
+            }
+            if (data.containsKey("body")) {
+                body = data.get("body");
+            }
+            if (data.containsKey("severity")) {
+                severity = data.get("severity");
+            }
+        }
+
+        saveLastMessage(title, body, severity);
+        showNotification(title, body, severity);
     }
 
-    private void loadAlertHistory() {
+    private void saveLastMessage(String title, String body, String severity) {
         SharedPreferences prefs = getSharedPreferences("obsbank_prefs", MODE_PRIVATE);
         String alertsJson = prefs.getString("alerts_list", "[]");
-        
-        List<Alert> alertList = new ArrayList<>();
         try {
-            JSONArray array = new JSONArray(alertsJson);
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject obj = array.getJSONObject(i);
-                alertList.add(new Alert(
-                        obj.optString("title", "Alerta"),
-                        obj.optString("body", ""),
-                        obj.optString("severity", "info"),
-                        obj.optLong("timestamp", System.currentTimeMillis())
-                ));
+            org.json.JSONArray array = new org.json.JSONArray(alertsJson);
+            org.json.JSONObject newAlert = new org.json.JSONObject();
+            newAlert.put("title", title);
+            newAlert.put("body", body);
+            newAlert.put("severity", severity);
+            newAlert.put("timestamp", System.currentTimeMillis());
+
+            org.json.JSONArray newArray = new org.json.JSONArray();
+            newArray.put(newAlert);
+
+            for (int i = 0; i < array.length() && i < 49; i++) {
+                newArray.put(array.get(i));
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+
+            prefs.edit().putString("alerts_list", newArray.toString()).apply();
+            
+            // Avisar a la MainActivity que hay una nueva alerta (si está abierta)
+            sendBroadcast(new android.content.Intent("com.obsbank.alerts.NEW_ALERT"));
+            
+        } catch (org.json.JSONException e) {
+            Log.e(TAG, "Error guardando historial JSON", e);
         }
-        
-        alertsAdapter.updateAlerts(alertList);
+    }
+
+    private void showNotification(String title, String body, String severity) {
+        NotificationManager manager =
+                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+        if (manager == null) return;
+
+        String channelId;
+        String channelName;
+        int importance;
+        int color;
+
+        if ("critical".equalsIgnoreCase(severity)) {
+            channelId = "obsbank_critical";
+            channelName = "Alertas Críticas";
+            importance = NotificationManager.IMPORTANCE_HIGH;
+            color = android.graphics.Color.RED;
+        } else if ("warning".equalsIgnoreCase(severity)) {
+            channelId = "obsbank_warning";
+            channelName = "Alertas de Advertencia";
+            importance = NotificationManager.IMPORTANCE_HIGH;
+            color = android.graphics.Color.rgb(255, 165, 0); // Orange
+        } else {
+            channelId = "obsbank_info";
+            channelName = "Alertas de Información";
+            importance = NotificationManager.IMPORTANCE_DEFAULT;
+            color = android.graphics.Color.BLUE;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    channelId,
+                    channelName,
+                    importance
+            );
+            manager.createNotificationChannel(channel);
+        }
+
+        NotificationCompat.Builder builder =
+                new NotificationCompat.Builder(this, channelId)
+                        .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                        .setContentTitle(title)
+                        .setContentText(body)
+                        .setColor(color)
+                        .setPriority(importance == NotificationManager.IMPORTANCE_HIGH ? NotificationCompat.PRIORITY_HIGH : NotificationCompat.PRIORITY_DEFAULT)
+                        .setAutoCancel(true);
+
+        manager.notify((int) System.currentTimeMillis(), builder.build());
     }
 }
