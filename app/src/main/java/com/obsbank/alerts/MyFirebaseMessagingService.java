@@ -60,8 +60,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             }
         }
 
-        saveLastMessage(title, body, severity);
-        showNotification(title, body, severity);
+        saveLastMessage(title, body);
+        showNotification(title, body);
     }
 
     private void saveLastMessage(String title, String body, String severity) {
