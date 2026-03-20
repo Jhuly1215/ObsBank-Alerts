@@ -15,7 +15,6 @@ import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
-    private static final String CHANNEL_ID = "obsbank_alerts";
     private static final String TAG = "OBS_BANK_FCM";
 
     @Override
@@ -33,6 +32,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         String title = "Alert";
         String body = "New alert";
+        String severity = "info";
 
         if (message.getNotification() != null) {
             Log.d(TAG, "Notification payload presente");
@@ -55,43 +55,87 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             if (data.containsKey("body")) {
                 body = data.get("body");
             }
+            if (data.containsKey("severity")) {
+                severity = data.get("severity");
+            }
         }
 
-        saveLastMessage(title, body);
-        showNotification(title, body);
+        saveLastMessage(title, body, severity);
+        showNotification(title, body, severity);
     }
 
-    private void saveLastMessage(String title, String body) {
+    private void saveLastMessage(String title, String body, String severity) {
         SharedPreferences prefs = getSharedPreferences("obsbank_prefs", MODE_PRIVATE);
-        prefs.edit()
-                .putString("last_title", title)
-                .putString("last_body", body)
-                .apply();
+        String alertsJson = prefs.getString("alerts_list", "[]");
+        try {
+            org.json.JSONArray array = new org.json.JSONArray(alertsJson);
+            org.json.JSONObject newAlert = new org.json.JSONObject();
+            newAlert.put("title", title);
+            newAlert.put("body", body);
+            newAlert.put("severity", severity);
+            newAlert.put("timestamp", System.currentTimeMillis());
 
-        Log.d(TAG, "Mensaje guardado: " + title + " / " + body);
+            org.json.JSONArray newArray = new org.json.JSONArray();
+            newArray.put(newAlert);
+
+            for (int i = 0; i < array.length() && i < 49; i++) {
+                newArray.put(array.get(i));
+            }
+
+            prefs.edit().putString("alerts_list", newArray.toString()).apply();
+            
+            // Avisar a la MainActivity que hay una nueva alerta (si está abierta)
+            sendBroadcast(new android.content.Intent("com.obsbank.alerts.NEW_ALERT"));
+            
+        } catch (org.json.JSONException e) {
+            Log.e(TAG, "Error guardando historial JSON", e);
+        }
     }
 
-    private void showNotification(String title, String body) {
+    private void showNotification(String title, String body, String severity) {
         NotificationManager manager =
                 (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
         if (manager == null) return;
 
+        String channelId;
+        String channelName;
+        int importance;
+        int color;
+
+        if ("critical".equalsIgnoreCase(severity)) {
+            channelId = "obsbank_critical";
+            channelName = "Alertas Críticas";
+            importance = NotificationManager.IMPORTANCE_HIGH;
+            color = android.graphics.Color.RED;
+        } else if ("warning".equalsIgnoreCase(severity)) {
+            channelId = "obsbank_warning";
+            channelName = "Alertas de Advertencia";
+            importance = NotificationManager.IMPORTANCE_HIGH;
+            color = android.graphics.Color.rgb(255, 165, 0); // Orange
+        } else {
+            channelId = "obsbank_info";
+            channelName = "Alertas de Información";
+            importance = NotificationManager.IMPORTANCE_DEFAULT;
+            color = android.graphics.Color.BLUE;
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "ObsBank Alerts",
-                    NotificationManager.IMPORTANCE_HIGH
+                    channelId,
+                    channelName,
+                    importance
             );
             manager.createNotificationChannel(channel);
         }
 
         NotificationCompat.Builder builder =
-                new NotificationCompat.Builder(this, CHANNEL_ID)
+                new NotificationCompat.Builder(this, channelId)
                         .setSmallIcon(android.R.drawable.ic_dialog_alert)
                         .setContentTitle(title)
                         .setContentText(body)
-                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setColor(color)
+                        .setPriority(importance == NotificationManager.IMPORTANCE_HIGH ? NotificationCompat.PRIORITY_HIGH : NotificationCompat.PRIORITY_DEFAULT)
                         .setAutoCancel(true);
 
         manager.notify((int) System.currentTimeMillis(), builder.build());

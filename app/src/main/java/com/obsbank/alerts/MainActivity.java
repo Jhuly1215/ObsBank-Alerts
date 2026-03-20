@@ -11,6 +11,17 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -18,7 +29,9 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView tokenText;
     private TextView statusText;
-    private TextView lastMessageText;
+    private RecyclerView recyclerViewAlerts;
+    private AlertsAdapter alertsAdapter;
+    private BroadcastReceiver alertReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,7 +40,11 @@ public class MainActivity extends AppCompatActivity {
 
         tokenText = findViewById(R.id.tokenText);
         statusText = findViewById(R.id.statusText);
-        lastMessageText = findViewById(R.id.lastMessageText);
+        
+        recyclerViewAlerts = findViewById(R.id.recyclerViewAlerts);
+        recyclerViewAlerts.setLayoutManager(new LinearLayoutManager(this));
+        alertsAdapter = new AlertsAdapter(new ArrayList<>());
+        recyclerViewAlerts.setAdapter(alertsAdapter);
 
         Button btnCriticalSub = findViewById(R.id.btnCriticalSub);
         Button btnCriticalUnsub = findViewById(R.id.btnCriticalUnsub);
@@ -38,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
 
         requestNotificationPermission();
         loadToken();
-        loadLastMessage();
+        loadAlertHistory();
 
         btnCriticalSub.setOnClickListener(v -> subscribe("obsbank-critical"));
         btnCriticalUnsub.setOnClickListener(v -> unsubscribe("obsbank-critical"));
@@ -48,12 +65,31 @@ public class MainActivity extends AppCompatActivity {
 
         btnInfoSub.setOnClickListener(v -> subscribe("obsbank-info"));
         btnInfoUnsub.setOnClickListener(v -> unsubscribe("obsbank-info"));
+
+        // Inicializa un receiver para refrescar los datos automáticamente
+        alertReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                loadAlertHistory();
+            }
+        };
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        loadLastMessage();
+        loadAlertHistory();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            registerReceiver(alertReceiver, new IntentFilter("com.obsbank.alerts.NEW_ALERT"), Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(alertReceiver, new IntentFilter("com.obsbank.alerts.NEW_ALERT"));
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(alertReceiver);
     }
 
     private void loadToken() {
@@ -107,15 +143,26 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void loadLastMessage() {
+    private void loadAlertHistory() {
         SharedPreferences prefs = getSharedPreferences("obsbank_prefs", MODE_PRIVATE);
-        String lastTitle = prefs.getString("last_title", "No recibido");
-        String lastBody = prefs.getString("last_body", "");
-
-        if (lastBody.isEmpty()) {
-            lastMessageText.setText(lastTitle);
-        } else {
-            lastMessageText.setText(lastTitle + "\n" + lastBody);
+        String alertsJson = prefs.getString("alerts_list", "[]");
+        
+        List<Alert> alertList = new ArrayList<>();
+        try {
+            JSONArray array = new JSONArray(alertsJson);
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject obj = array.getJSONObject(i);
+                alertList.add(new Alert(
+                        obj.optString("title", "Alerta"),
+                        obj.optString("body", ""),
+                        obj.optString("severity", "info"),
+                        obj.optLong("timestamp", System.currentTimeMillis())
+                ));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        
+        alertsAdapter.updateAlerts(alertList);
     }
 }
