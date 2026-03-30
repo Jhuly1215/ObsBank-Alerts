@@ -11,6 +11,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import android.util.Log;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -38,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        tokenText = findViewById(R.id.tokenText);
+        //tokenText = findViewById(R.id.tokenText);
         statusText = findViewById(R.id.statusText);
         
         recyclerViewAlerts = findViewById(R.id.recyclerViewAlerts);
@@ -96,13 +97,14 @@ public class MainActivity extends AppCompatActivity {
         FirebaseMessaging.getInstance().getToken()
                 .addOnCompleteListener(task -> {
                     if (!task.isSuccessful()) {
-                        tokenText.setText("Error obteniendo token");
+                        // tokenText.setText("Error obteniendo token");
                         statusText.setText("No se pudo obtener el token");
                         return;
                     }
 
                     String token = task.getResult();
-                    tokenText.setText(token);
+                    Log.d("FCM_TOKEN", "Token del dispositivo: " + token);
+                    // tokenText.setText(token);
                     statusText.setText("Dispositivo registrado");
                 });
     }
