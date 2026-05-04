@@ -1,104 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="16dp"
-    android:layout_marginVertical="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    android:paddingBottom="12dp">
 
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <!-- Indicador de color lateral -->
-        <View
-            android:id="@+id/colorIndicator"
-            android:layout_width="8dp"
-            android:layout_height="match_parent"
-            android:background="#1976D2" /> <!-- Color por defecto -->
+        app:cardBackgroundColor="@color/bg_card_surface"
+        app:cardCornerRadius="12dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/card_stroke_color">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:orientation="horizontal"
+            android:baselineAligned="false">
 
-            <!-- Cabecera visible siempre -->
+            <!-- Barra lateral (el color lo asigna el adapter) -->
+            <View
+                android:id="@+id/colorIndicator"
+                android:layout_width="6dp"
+                android:layout_height="match_parent"
+                android:background="#1E88E5"/>
+
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-                
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    
-                    <TextView
-                        android:id="@+id/tvAlertTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Título de la Alerta"
-                        android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:textColor="#333333" />
-
-                    <TextView
-                        android:id="@+id/tvAlertTime"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Hace 5 min"
-                        android:textSize="12sp"
-                        android:textColor="#888888"
-                        android:layout_marginTop="4dp" />
-                </LinearLayout>
-
-                <ImageView
-                    android:id="@+id/ivExpandIcon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/arrow_down_float"
-                    app:tint="#888888" />
-            </LinearLayout>
-
-            <!-- Contenido expandible oculto inicialmente -->
-            <LinearLayout
-                android:id="@+id/expandableLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
-                android:layout_marginTop="12dp"
-                android:paddingTop="12dp"
-                android:background="@drawable/border_top">
+                android:padding="16dp">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    
+                    <TextView
+                        android:id="@+id/tvAlertTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_toStartOf="@id/ivExpandIcon"
+                        android:text="Título de la alerta"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/ivExpandIcon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_alignParentEnd="true"
+                        android:src="@android:drawable/ic_menu_more"
+                        app:tint="@color/text_secondary" />
+                </RelativeLayout>
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:id="@+id/tvAlertTime"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Detalle (Raw JSON):"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:textColor="#555555" />
-
-                <TextView
-                    android:id="@+id/tvAlertBody"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Mensaje crudo de la alerta."
-                    android:textSize="13sp"
-                    android:textColor="#444444"
-                    android:fontFamily="monospace"
                     android:layout_marginTop="4dp"
-                    android:textIsSelectable="true" />
-                
-            </LinearLayout>
+                    android:text="Hace 5 min"
+                    android:textColor="@color/text_hint"
+                    android:textSize="12sp" />
 
+                <!-- Cuerpo Expandible -->
+                <LinearLayout
+                    android:id="@+id/expandableLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:layout_marginTop="12dp">
+                    
+                    <TextView
+                        android:id="@+id/tvAlertBody"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Detalle técnico de la alerta."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp" />
+                        
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
-</androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
+</FrameLayout>

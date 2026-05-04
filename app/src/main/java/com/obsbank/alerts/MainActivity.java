@@ -1,134 +1,58 @@
 package com.obsbank.alerts;
 
 import android.Manifest;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.widget.Button;
-import android.widget.TextView;
+import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import android.util.Log;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.fragment.app.Fragment;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView tokenText;
-    private TextView statusText;
-    private RecyclerView recyclerViewAlerts;
-    private AlertsAdapter alertsAdapter;
-    private BroadcastReceiver alertReceiver;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setTheme(R.style.Theme_ObsBankAlerts);
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        //tokenText = findViewById(R.id.tokenText);
-        statusText = findViewById(R.id.statusText);
         
-        recyclerViewAlerts = findViewById(R.id.recyclerViewAlerts);
-        recyclerViewAlerts.setLayoutManager(new LinearLayoutManager(this));
-        alertsAdapter = new AlertsAdapter(new ArrayList<>());
-        recyclerViewAlerts.setAdapter(alertsAdapter);
-
-        Button btnCriticalSub = findViewById(R.id.btnCriticalSub);
-        Button btnCriticalUnsub = findViewById(R.id.btnCriticalUnsub);
-        Button btnWarningSub = findViewById(R.id.btnWarningSub);
-        Button btnWarningUnsub = findViewById(R.id.btnWarningUnsub);
-        Button btnInfoSub = findViewById(R.id.btnInfoSub);
-        Button btnInfoUnsub = findViewById(R.id.btnInfoUnsub);
+        setContentView(R.layout.activity_main);
 
         requestNotificationPermission();
         loadToken();
-        loadAlertHistory();
 
-        btnCriticalSub.setOnClickListener(v -> subscribe("obsbank-critical"));
-        btnCriticalUnsub.setOnClickListener(v -> unsubscribe("obsbank-critical"));
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
 
-        btnWarningSub.setOnClickListener(v -> subscribe("obsbank-warning"));
-        btnWarningUnsub.setOnClickListener(v -> unsubscribe("obsbank-warning"));
+        bottomNav.setOnItemSelectedListener(item -> {
+            Fragment selectedFragment = null;
+            int itemId = item.getItemId();
 
-        btnInfoSub.setOnClickListener(v -> subscribe("obsbank-info"));
-        btnInfoUnsub.setOnClickListener(v -> unsubscribe("obsbank-info"));
-
-        // Inicializa un receiver para refrescar los datos automáticamente
-        alertReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                loadAlertHistory();
+            if (itemId == R.id.navigation_inicio) {
+                selectedFragment = new InicioFragment();
+            } else if (itemId == R.id.navigation_alertas) {
+                selectedFragment = new AlertasFragment();
+            } else if (itemId == R.id.navigation_logs) {
+                selectedFragment = new LogsFragment();
+            } else if (itemId == R.id.navigation_perfil) {
+                selectedFragment = new PerfilFragment();
             }
-        };
-    }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        loadAlertHistory();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            registerReceiver(alertReceiver, new IntentFilter("com.obsbank.alerts.NEW_ALERT"), Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(alertReceiver, new IntentFilter("com.obsbank.alerts.NEW_ALERT"));
+            if (selectedFragment != null) {
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.nav_host_fragment, selectedFragment)
+                        .commit();
+            }
+            return true;
+        });
+
+        if (savedInstanceState == null) {
+            bottomNav.setSelectedItemId(R.id.navigation_inicio);
         }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver(alertReceiver);
-    }
-
-    private void loadToken() {
-        FirebaseMessaging.getInstance().getToken()
-                .addOnCompleteListener(task -> {
-                    if (!task.isSuccessful()) {
-                        // tokenText.setText("Error obteniendo token");
-                        statusText.setText("No se pudo obtener el token");
-                        return;
-                    }
-
-                    String token = task.getResult();
-                    Log.d("FCM_TOKEN", "Token del dispositivo: " + token);
-                    // tokenText.setText(token);
-                    statusText.setText("Dispositivo registrado");
-                });
-    }
-
-    private void subscribe(String topic) {
-        FirebaseMessaging.getInstance().subscribeToTopic(topic)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        statusText.setText("Suscrito a: " + topic);
-                    } else {
-                        statusText.setText("Falló la suscripción a: " + topic);
-                    }
-                });
-    }
-
-    private void unsubscribe(String topic) {
-        FirebaseMessaging.getInstance().unsubscribeFromTopic(topic)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        statusText.setText("Desuscrito de: " + topic);
-                    } else {
-                        statusText.setText("Falló la desuscripción de: " + topic);
-                    }
-                });
     }
 
     private void requestNotificationPermission() {
@@ -145,26 +69,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void loadAlertHistory() {
-        SharedPreferences prefs = getSharedPreferences("obsbank_prefs", MODE_PRIVATE);
-        String alertsJson = prefs.getString("alerts_list", "[]");
-        
-        List<Alert> alertList = new ArrayList<>();
-        try {
-            JSONArray array = new JSONArray(alertsJson);
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject obj = array.getJSONObject(i);
-                alertList.add(new Alert(
-                        obj.optString("title", "Alerta"),
-                        obj.optString("body", ""),
-                        obj.optString("severity", "info"),
-                        obj.optLong("timestamp", System.currentTimeMillis())
-                ));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        
-        alertsAdapter.updateAlerts(alertList);
+    private void loadToken() {
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.w("FCM_TOKEN", "Error obteniendo token FCM", task.getException());
+                        return;
+                    }
+
+                    String token = task.getResult();
+                    Log.d("FCM_TOKEN", "Token del dispositivo: " + token);
+                    
+                    android.content.SharedPreferences prefs = getSharedPreferences("obsbank_prefs", MODE_PRIVATE);
+                    prefs.edit().putString("last_token", token).apply();
+                });
     }
 }

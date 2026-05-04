@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores base de marca (Ecofuturo) -->
+    <color name="brand_orange">#FF6600</color>
+    <color name="brand_orange_dark">#E65C00</color>
+    <color name="brand_teal">#006775</color>
+
+    <!-- Fondos Modo Oscuro Clásico -->
+    <color name="bg_dark_main">#121212</color>
+    <color name="bg_card_surface">#222222</color>
+    <color name="bg_bottom_nav">#1E1E1E</color>
+
+    <!-- Textos -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#A1A1AA</color>
+    <color name="text_hint">#52525B</color>
+
+    <!-- Semánticos (Alertas) adaptados a oscuro -->
+    <color name="status_success">#00E676</color>
+    <color name="status_warning">#FFC107</color>
+    <color name="status_critical">#FF4C4C</color>
+    <color name="status_info">#29B6F6</color>
+    
+    <!-- Divisores -->
+    <color name="divider_color">#333333</color>
+    <color name="card_stroke_color">#333333</color>
+</resources>
